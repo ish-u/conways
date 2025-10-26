@@ -25,6 +25,14 @@ import (
 
 // ASCII Sequence Code - https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
 
+func clearScreen() {
+	fmt.Print("\x1B[2J")
+}
+
+func moveToHome() {
+	fmt.Print("\x1B[H")
+}
+
 func main() {
 
 	// Enabling Raw Mode
@@ -34,10 +42,30 @@ func main() {
 		fmt.Println("Error enabling raw mode:", err)
 		panic(err)
 	}
+	clearScreen()
+	moveToHome()
+
+	// Render Loop
+	buf := make([]byte, 3)
+	for {
+		_, err := os.Stdin.Read(buf)
+		if err != nil {
+			fmt.Println("Error Reading input")
+			break
+		}
+
+		// Reading the Escape Code - ESC[{code};{string};{...}p
+		key := buf[0]
+		// Code for CTRL+C is 3
+		if key == 3 {
+			break
+		}
+
+	}
 
 	// Diabling Raw Mode
-	fmt.Print("\x1B[2J") // Clear Screen
-	fmt.Print("\x1B[H")  // Move Cursor to Home
+	clearScreen()
+	moveToHome()
 	defer term.Restore(fd, oldState)
 
 }
