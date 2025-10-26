@@ -1,6 +1,11 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+
+	"golang.org/x/term"
+)
 
 /*
 
@@ -18,6 +23,21 @@ import "fmt"
 	--------
 */
 
+// ASCII Sequence Code - https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
+
 func main() {
-	fmt.Println("Hello World")
+
+	// Enabling Raw Mode
+	fd := int(os.Stdin.Fd())
+	oldState, err := term.MakeRaw(int(fd))
+	if err != nil {
+		fmt.Println("Error enabling raw mode:", err)
+		panic(err)
+	}
+
+	// Diabling Raw Mode
+	fmt.Print("\x1B[2J") // Clear Screen
+	fmt.Print("\x1B[H")  // Move Cursor to Home
+	defer term.Restore(fd, oldState)
+
 }
