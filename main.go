@@ -191,6 +191,15 @@ func main() {
 		generation: 0,
 	}
 
+	universe.grid.addCell(Cell{-2, 1})
+	universe.grid.addCell(Cell{-3, -1})
+	universe.grid.addCell(Cell{-2, -1})
+	universe.grid.addCell(Cell{3, -1})
+	universe.grid.addCell(Cell{0, 0})
+	universe.grid.addCell(Cell{1, -1})
+	universe.grid.addCell(Cell{2, -1})
+	universe.grid.addCell(Cell{3, -1})
+
 	// Render Loop
 	for {
 		universe.draw()
