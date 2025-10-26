@@ -36,6 +36,10 @@ func (grid Grid) addCell(cell Cell) {
 	grid[cell] = true
 }
 
+func (grid Grid) removeCell(cell Cell) {
+	delete(grid, cell)
+}
+
 func (grid Grid) getNeighbourCells(cell Cell) (dead []Cell, live []Cell) {
 	directions := []Cell{
 		{-1, 1},  // TOP LEFT
@@ -126,12 +130,22 @@ func hideCussor() {
 	fmt.Print("\x1b[?25l")
 }
 
+func enableMouseEvents() {
+	fmt.Print("\x1B[?1000h")
+	fmt.Print("\x1B[?1006h")
+}
+
+func disableMouseEvents() {
+	fmt.Print("\x1B[?1000l")
+	fmt.Print("\x1B[?1006l")
+}
+
 func main() {
 
 	// Handle Input
 	inputChannel := make(chan []byte)
 	go func() {
-		buf := make([]byte, 3)
+		buf := make([]byte, 32)
 		for {
 			_, err := os.Stdin.Read(buf)
 			if err != nil {
@@ -157,11 +171,13 @@ func main() {
 	hideCussor()
 	clearScreen()
 	moveToHome()
+	enableMouseEvents()
 
 	// Disable Raw mode on return
 	defer clearScreen()
 	defer moveToHome()
 	defer showCussor()
+	defer disableMouseEvents()
 	defer term.Restore(fd, oldState)
 
 	universe := Universe{
@@ -186,7 +202,9 @@ func main() {
 		case keyBuffer := <-inputChannel:
 			// Reading the Escape Code - ESC[{code};{string};{...}p
 			key := keyBuffer[0]
-			// Code for CTRL+C is 3
+			// Code for CTRL+C       -> 3
+			// Code for Space  	     -> 32
+			// Code for Mouse Click  -> \x1b[<%_BUTTON_;%_COL_;%_ROW_M
 			if key == 3 {
 				return
 			} else if key == 32 {
@@ -195,9 +213,21 @@ func main() {
 				} else {
 					universe.pause()
 				}
+			} else if key == 27 && len(keyBuffer) > 2 && keyBuffer[1] == '[' && keyBuffer[2] == '<' && universe.paused {
+				var button, col, row int
+				n, _ := fmt.Sscanf(string(keyBuffer), "\x1b[<%d;%d;%dM", &button, &col, &row)
+				if n == 3 {
+					cellX := col - universe.cols/2
+					cellY := universe.rows/2 - row
+					if button == 0 {
+						universe.grid.addCell(Cell{cellX, cellY})
+					} else if button == 2 {
+						universe.grid.removeCell(Cell{cellX, cellY})
+					}
+				}
 			}
 		default:
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 
