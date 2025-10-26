@@ -63,6 +63,15 @@ type Universe struct {
 	window [4]int
 	rows   int
 	cols   int
+	paused bool
+}
+
+func (universe *Universe) play() {
+	universe.paused = false
+}
+
+func (universe *Universe) pause() {
+	universe.paused = true
 }
 
 func (universe Universe) draw() {
@@ -117,17 +126,6 @@ func hideCussor() {
 	fmt.Print("\x1b[?25l")
 }
 
-func handleKeys(buf []byte) int {
-	// Reading the Escape Code - ESC[{code};{string};{...}p
-	key := buf[0]
-	// Code for CTRL+C is 3
-	if key == 3 {
-		return -1
-	}
-
-	return 0
-}
-
 func main() {
 
 	// Handle Input
@@ -135,7 +133,6 @@ func main() {
 	go func() {
 		buf := make([]byte, 3)
 		for {
-
 			_, err := os.Stdin.Read(buf)
 			if err != nil {
 				close(inputChannel)
@@ -172,6 +169,7 @@ func main() {
 		window: [4]int{-rows / 2, -cols / 2, rows / 2, cols / 2},
 		rows:   rows,
 		cols:   cols,
+		paused: true,
 	}
 	universe.grid.addCell(Cell{0, -1})
 	universe.grid.addCell(Cell{0, 0})
@@ -180,12 +178,23 @@ func main() {
 	// Render Loop
 	for {
 		universe.draw()
-		universe.tick()
+		if !universe.paused {
+			universe.tick()
+		}
 
 		select {
 		case keyBuffer := <-inputChannel:
-			if handleKeys(keyBuffer) == -1 {
+			// Reading the Escape Code - ESC[{code};{string};{...}p
+			key := keyBuffer[0]
+			// Code for CTRL+C is 3
+			if key == 3 {
 				return
+			} else if key == 32 {
+				if universe.paused {
+					universe.play()
+				} else {
+					universe.pause()
+				}
 			}
 		default:
 			time.Sleep(500 * time.Millisecond)
