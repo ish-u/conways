@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"golang.org/x/term"
 )
@@ -31,12 +32,30 @@ type Cell struct {
 }
 type Grid map[Cell]bool
 
-func (grid Grid) addCell(i int, j int) {
-	grid[Cell{i, j}] = true
+func (grid Grid) addCell(cell Cell) {
+	grid[cell] = true
 }
 
-func (grid Grid) removeCell(i int, j int) {
-	delete(grid, Cell{i, j})
+func (grid Grid) getNeighbourCells(cell Cell) (dead []Cell, live []Cell) {
+	directions := []Cell{
+		{-1, 1},  // TOP LEFT
+		{0, 1},   // TOP
+		{1, 1},   // TOP RIGHT
+		{1, 0},   // RIGHT
+		{1, -1},  // BOTTOM RIGHT
+		{0, -1},  // BOTTOM
+		{-1, -1}, // BOTTOM LEFT
+		{-1, 0},  // LEFT
+	}
+	for _, direction := range directions {
+		if (grid[Cell{X: cell.X + direction.X, Y: cell.Y + direction.Y}]) {
+			live = append(live, Cell{X: cell.X + direction.X, Y: cell.Y + direction.Y})
+		} else {
+			dead = append(dead, Cell{X: cell.X + direction.X, Y: cell.Y + direction.Y})
+		}
+	}
+
+	return dead, live
 }
 
 type Universe struct {
@@ -47,9 +66,34 @@ type Universe struct {
 }
 
 func (universe Universe) draw() {
-	for cell, _ := range universe.grid {
-		draw(cell.X, cell.Y, "0")
+	clearScreen()
+	offsetX := universe.cols / 2
+	offsetY := universe.rows / 2
+	for cell := range universe.grid {
+		row := offsetY - cell.Y
+		col := offsetX + cell.X
+		draw(row, col, "◻")
 	}
+}
+
+func (universe *Universe) tick() {
+	newGrid := make(Grid)
+	for cell := range universe.grid {
+		deadNeighbours, aliveNeighbours := universe.grid.getNeighbourCells(cell)
+
+		if len(aliveNeighbours) == 2 || len(aliveNeighbours) == 3 {
+			newGrid.addCell(Cell{cell.X, cell.Y})
+		}
+
+		for _, deadNeighbour := range deadNeighbours {
+			_, aliveNeighboursAroundDead := universe.grid.getNeighbourCells(deadNeighbour)
+			if len(aliveNeighboursAroundDead) == 3 {
+				newGrid.addCell(Cell{deadNeighbour.X, deadNeighbour.Y})
+			}
+		}
+
+	}
+	universe.grid = newGrid
 }
 
 // Raw mode helpers
@@ -129,11 +173,14 @@ func main() {
 		rows:   rows,
 		cols:   cols,
 	}
-	universe.grid.addCell(0, 0)
+	universe.grid.addCell(Cell{0, -1})
+	universe.grid.addCell(Cell{0, 0})
+	universe.grid.addCell(Cell{0, 1})
 
 	// Render Loop
 	for {
 		universe.draw()
+		universe.tick()
 
 		select {
 		case keyBuffer := <-inputChannel:
@@ -141,6 +188,7 @@ func main() {
 				return
 			}
 		default:
+			time.Sleep(500 * time.Millisecond)
 		}
 	}
 
