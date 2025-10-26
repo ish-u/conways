@@ -66,14 +66,41 @@ func moveToHome() {
 }
 
 func showCussor() {
-	fmt.Print("\x1b[?25l")
+	fmt.Print("\x1b[?25h")
 }
 
 func hideCussor() {
 	fmt.Print("\x1b[?25l")
 }
 
+func handleKeys(buf []byte) int {
+	// Reading the Escape Code - ESC[{code};{string};{...}p
+	key := buf[0]
+	// Code for CTRL+C is 3
+	if key == 3 {
+		return -1
+	}
+
+	return 0
+}
+
 func main() {
+
+	// Handle Input
+	inputChannel := make(chan []byte)
+	go func() {
+		buf := make([]byte, 3)
+		for {
+
+			_, err := os.Stdin.Read(buf)
+			if err != nil {
+				close(inputChannel)
+				fmt.Println("Error Reading input")
+				return
+			}
+			inputChannel <- buf
+		}
+	}()
 
 	// Enabling Raw Mode
 	fd := int(os.Stdin.Fd())
@@ -90,6 +117,12 @@ func main() {
 	clearScreen()
 	moveToHome()
 
+	// Disable Raw mode on return
+	defer clearScreen()
+	defer moveToHome()
+	defer showCussor()
+	defer term.Restore(fd, oldState)
+
 	universe := Universe{
 		grid:   make(Grid),
 		window: [4]int{-rows / 2, -cols / 2, rows / 2, cols / 2},
@@ -99,29 +132,16 @@ func main() {
 	universe.grid.addCell(0, 0)
 
 	// Render Loop
-	buf := make([]byte, 3)
 	for {
 		universe.draw()
 
-		_, err := os.Stdin.Read(buf)
-		if err != nil {
-			fmt.Println("Error Reading input")
-			break
+		select {
+		case keyBuffer := <-inputChannel:
+			if handleKeys(keyBuffer) == -1 {
+				return
+			}
+		default:
 		}
-
-		// Reading the Escape Code - ESC[{code};{string};{...}p
-		key := buf[0]
-		// Code for CTRL+C is 3
-		if key == 3 {
-			break
-		}
-
 	}
-
-	// Diabling Raw Mode
-	clearScreen()
-	moveToHome()
-	showCussor()
-	defer term.Restore(fd, oldState)
 
 }
