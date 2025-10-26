@@ -63,11 +63,12 @@ func (grid Grid) getNeighbourCells(cell Cell) (dead []Cell, live []Cell) {
 }
 
 type Universe struct {
-	grid   Grid
-	window [4]int
-	rows   int
-	cols   int
-	paused bool
+	grid       Grid
+	window     [4]int
+	rows       int
+	cols       int
+	paused     bool
+	generation int
 }
 
 func (universe *Universe) play() {
@@ -85,8 +86,12 @@ func (universe Universe) draw() {
 	for cell := range universe.grid {
 		row := offsetY - cell.Y
 		col := offsetX + cell.X
-		draw(row, col, "◻")
+		if row > 0 && col > 0 && row < universe.rows && col < universe.cols {
+			draw(row, col, "◻")
+		}
 	}
+	moveToHome()
+	fmt.Printf("GENERATION : %d | POPULATION : %d | PAUSED : %t", universe.generation, len(universe.grid), universe.paused)
 }
 
 func (universe *Universe) tick() {
@@ -107,6 +112,7 @@ func (universe *Universe) tick() {
 
 	}
 	universe.grid = newGrid
+	universe.generation++
 }
 
 // Raw mode helpers
@@ -181,15 +187,13 @@ func main() {
 	defer term.Restore(fd, oldState)
 
 	universe := Universe{
-		grid:   make(Grid),
-		window: [4]int{-rows / 2, -cols / 2, rows / 2, cols / 2},
-		rows:   rows,
-		cols:   cols,
-		paused: true,
+		grid:       make(Grid),
+		window:     [4]int{-rows / 2, -cols / 2, rows / 2, cols / 2},
+		rows:       rows,
+		cols:       cols,
+		paused:     true,
+		generation: 0,
 	}
-	universe.grid.addCell(Cell{0, -1})
-	universe.grid.addCell(Cell{0, 0})
-	universe.grid.addCell(Cell{0, 1})
 
 	// Render Loop
 	for {
