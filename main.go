@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"golang.org/x/term"
@@ -21,6 +22,15 @@ import (
 */
 
 // ASCII Sequence Code - https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
+
+const (
+	Horizontal  = "\u2500" // ─
+	Vertical    = "\u2502" // │
+	TopLeft     = "\u250C" // ┌
+	TopRight    = "\u2510" // ┐
+	BottomLeft  = "\u2514" // └
+	BottomRight = "\u2518" // ┘
+)
 
 // Grid
 type Cell struct {
@@ -58,6 +68,7 @@ func (grid Grid) getNeighbourCells(cell Cell) (dead []Cell, live []Cell) {
 	return dead, live
 }
 
+// Universe
 type Universe struct {
 	grid       Grid
 	window     [4]int
@@ -77,17 +88,33 @@ func (universe *Universe) pause() {
 
 func (universe Universe) draw() {
 	clearScreen()
+
+	// Universe Window
+	draw(1, 1, strings.Repeat(Horizontal, universe.cols))
+	draw(1, 1, TopLeft)
+	draw(1, universe.cols, TopRight)
+	for i := range universe.rows {
+		draw(i+2, 1, Vertical)
+		draw(i+2, universe.cols, Vertical)
+	}
+	draw(universe.rows, 1, strings.Repeat(Horizontal, universe.cols))
+	draw(universe.rows, 1, BottomLeft)
+	draw(universe.rows, universe.cols, BottomRight)
+
+	// Bottom Status Bar
+	status := fmt.Sprintf(" GENERATION: %d | POPULATION: %d | PAUSED: %t ",
+		universe.generation, len(universe.grid), universe.paused)
+	draw(universe.rows, (universe.cols-len(status))/2, status)
+
 	offsetX := universe.cols / 2
 	offsetY := universe.rows / 2
 	for cell := range universe.grid {
 		row := offsetY - cell.Y
 		col := offsetX + cell.X
-		if row > 0 && col > 0 && row < universe.rows && col < universe.cols {
+		if row > 1 && col > 1 && row < universe.rows && col < universe.cols {
 			draw(row, col, "■")
 		}
 	}
-	moveToHome()
-	fmt.Printf("GENERATION : %d | POPULATION : %d | PAUSED : %t", universe.generation, len(universe.grid), universe.paused)
 }
 
 func (universe *Universe) tick() {
