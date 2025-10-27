@@ -12,13 +12,6 @@ import (
 /*
 
 	Ref -> https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
-
-	TODO
-	--------
-	- We will use the Raw mode and create a rectangle with borders -> (N-2)x(M-2)
-	- At any point this rectangle will show a part of the infinite 2D Grid => [A, B, C, D]
-	- We can move across the grid with arrow keys
-	--------
 */
 
 // ASCII Sequence Code - https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
@@ -68,14 +61,44 @@ func (grid Grid) getNeighbourCells(cell Cell) (dead []Cell, live []Cell) {
 	return dead, live
 }
 
+// Seeds
+type Seed string
+
+const (
+	ACORN  Seed = "ACORN"
+	GLIDER Seed = "GLIDER"
+)
+
+var SeedOrder = []Seed{ACORN, GLIDER}
+
+var UniverSeeds = map[Seed]Grid{
+	ACORN: {
+		Cell{X: -2, Y: 1}:  true,
+		Cell{X: -3, Y: -1}: true,
+		Cell{X: -2, Y: -1}: true,
+		Cell{X: 3, Y: -1}:  true,
+		Cell{X: 0, Y: 0}:   true,
+		Cell{X: 1, Y: -1}:  true,
+		Cell{X: 2, Y: -1}:  true,
+		Cell{X: 3, Y: -1}:  true,
+	},
+	GLIDER: {
+		Cell{X: 0, Y: 0}:  true,
+		Cell{X: 1, Y: 0}:  true,
+		Cell{X: 2, Y: 0}:  true,
+		Cell{X: 2, Y: -1}: true,
+		Cell{X: 1, Y: -2}: true,
+	},
+}
+
 // Universe
 type Universe struct {
-	grid       Grid
-	window     [4]int
-	rows       int
-	cols       int
-	paused     bool
-	generation int
+	grid           Grid
+	rows           int
+	cols           int
+	paused         bool
+	generation     int
+	currentSeedIdx int
 }
 
 func (universe *Universe) play() {
@@ -100,6 +123,10 @@ func (universe Universe) draw() {
 	draw(universe.rows, 1, strings.Repeat(Horizontal, universe.cols))
 	draw(universe.rows, 1, BottomLeft)
 	draw(universe.rows, universe.cols, BottomRight)
+
+	// Top Status Bar
+	seedName := fmt.Sprintf(" %s ", string(SeedOrder[universe.currentSeedIdx]))
+	draw(1, (universe.cols-len(seedName))/2, seedName)
 
 	// Bottom Status Bar
 	status := fmt.Sprintf(" GENERATION: %d | POPULATION: %d | PAUSED: %t ",
@@ -136,6 +163,11 @@ func (universe *Universe) tick() {
 	}
 	universe.grid = newGrid
 	universe.generation++
+}
+
+func (universe *Universe) resetSeed() {
+	universe.grid = UniverSeeds[SeedOrder[universe.currentSeedIdx]]
+	universe.generation = 0
 }
 
 // Raw mode helpers
@@ -210,22 +242,13 @@ func main() {
 	defer term.Restore(fd, oldState)
 
 	universe := Universe{
-		grid:       make(Grid),
-		window:     [4]int{-rows / 2, -cols / 2, rows / 2, cols / 2},
-		rows:       rows,
-		cols:       cols,
-		paused:     true,
-		generation: 0,
+		grid:           UniverSeeds[SeedOrder[0]],
+		rows:           rows,
+		cols:           cols,
+		paused:         true,
+		generation:     0,
+		currentSeedIdx: 0,
 	}
-
-	universe.grid.addCell(Cell{-2, 1})
-	universe.grid.addCell(Cell{-3, -1})
-	universe.grid.addCell(Cell{-2, -1})
-	universe.grid.addCell(Cell{3, -1})
-	universe.grid.addCell(Cell{0, 0})
-	universe.grid.addCell(Cell{1, -1})
-	universe.grid.addCell(Cell{2, -1})
-	universe.grid.addCell(Cell{3, -1})
 
 	// Render Loop
 	for {
@@ -261,6 +284,12 @@ func main() {
 						universe.grid.removeCell(Cell{cellX, cellY})
 					}
 				}
+			} else if key == 27 && (keyBuffer[1]) == '[' && (keyBuffer[2]) == 'C' && universe.paused {
+				universe.currentSeedIdx = (universe.currentSeedIdx + 1) % len(SeedOrder)
+				universe.resetSeed()
+			} else if key == 27 && (keyBuffer[1]) == '[' && (keyBuffer[2]) == 'D' && universe.paused {
+				universe.currentSeedIdx = (universe.currentSeedIdx - 1 + len(SeedOrder)) % len(SeedOrder)
+				universe.resetSeed()
 			}
 		default:
 			time.Sleep(100 * time.Millisecond)
