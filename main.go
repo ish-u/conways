@@ -65,11 +65,12 @@ func (grid Grid) getNeighbourCells(cell Cell) (dead []Cell, live []Cell) {
 type Seed string
 
 const (
-	ACORN  Seed = "ACORN"
-	GLIDER Seed = "GLIDER"
+	ACORN       Seed = "ACORN"
+	GLIDER      Seed = "GLIDER"
+	R_PENTOMINO Seed = "R_PENTOMINO"
 )
 
-var SeedOrder = []Seed{ACORN, GLIDER}
+var SeedOrder = []Seed{ACORN, GLIDER, R_PENTOMINO}
 
 var UniverSeeds = map[Seed]Grid{
 	ACORN: {
@@ -88,6 +89,13 @@ var UniverSeeds = map[Seed]Grid{
 		Cell{X: 2, Y: 0}:  true,
 		Cell{X: 2, Y: -1}: true,
 		Cell{X: 1, Y: -2}: true,
+	},
+	R_PENTOMINO: {
+		{X: 0, Y: 0}:  true,
+		{X: 1, Y: 0}:  true,
+		{X: -1, Y: 1}: true,
+		{X: 0, Y: 1}:  true,
+		{X: 0, Y: 2}:  true,
 	},
 }
 
@@ -139,7 +147,7 @@ func (universe Universe) draw() {
 		row := offsetY - cell.Y
 		col := offsetX + cell.X
 		if row > 1 && col > 1 && row < universe.rows && col < universe.cols {
-			draw(row, col, "■")
+			draw(row, col, "\u25A3")
 		}
 	}
 }
