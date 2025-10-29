@@ -191,11 +191,11 @@ func moveToHome() {
 	fmt.Print("\x1B[H")
 }
 
-func showCussor() {
+func showCursor() {
 	fmt.Print("\x1b[?25h")
 }
 
-func hideCussor() {
+func hideCursor() {
 	fmt.Print("\x1b[?25l")
 }
 
@@ -237,7 +237,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	hideCussor()
+	hideCursor()
 	clearScreen()
 	moveToHome()
 	enableMouseEvents()
@@ -245,7 +245,7 @@ func main() {
 	// Disable Raw mode on return
 	defer clearScreen()
 	defer moveToHome()
-	defer showCussor()
+	defer showCursor()
 	defer disableMouseEvents()
 	defer term.Restore(fd, oldState)
 
