@@ -121,25 +121,25 @@ func (universe Universe) draw() {
 	clearScreen()
 
 	// Universe Window
-	draw(1, 1, strings.Repeat(Horizontal, universe.cols))
-	draw(1, 1, TopLeft)
-	draw(1, universe.cols, TopRight)
+	drawOnTerminal(1, 1, strings.Repeat(Horizontal, universe.cols))
+	drawOnTerminal(1, 1, TopLeft)
+	drawOnTerminal(1, universe.cols, TopRight)
 	for i := range universe.rows {
-		draw(i+2, 1, Vertical)
-		draw(i+2, universe.cols, Vertical)
+		drawOnTerminal(i+2, 1, Vertical)
+		drawOnTerminal(i+2, universe.cols, Vertical)
 	}
-	draw(universe.rows, 1, strings.Repeat(Horizontal, universe.cols))
-	draw(universe.rows, 1, BottomLeft)
-	draw(universe.rows, universe.cols, BottomRight)
+	drawOnTerminal(universe.rows, 1, strings.Repeat(Horizontal, universe.cols))
+	drawOnTerminal(universe.rows, 1, BottomLeft)
+	drawOnTerminal(universe.rows, universe.cols, BottomRight)
 
 	// Top Status Bar
 	seedName := fmt.Sprintf(" %s ", string(SeedOrder[universe.currentSeedIdx]))
-	draw(1, (universe.cols-len(seedName))/2, seedName)
+	drawOnTerminal(1, (universe.cols-len(seedName))/2, seedName)
 
 	// Bottom Status Bar
 	status := fmt.Sprintf(" GENERATION: %d | POPULATION: %d | PAUSED: %t ",
 		universe.generation, len(universe.grid), universe.paused)
-	draw(universe.rows, (universe.cols-len(status))/2, status)
+	drawOnTerminal(universe.rows, (universe.cols-len(status))/2, status)
 
 	offsetX := universe.cols / 2
 	offsetY := universe.rows / 2
@@ -147,7 +147,7 @@ func (universe Universe) draw() {
 		row := offsetY - cell.Y
 		col := offsetX + cell.X
 		if row > 1 && col > 1 && row < universe.rows && col < universe.cols {
-			draw(row, col, "\u25A3")
+			drawOnTerminal(row, col, "\u25A3")
 		}
 	}
 }
@@ -179,7 +179,7 @@ func (universe *Universe) resetSeed() {
 }
 
 // Raw mode helpers
-func draw(row int, col int, element string) {
+func drawOnTerminal(row int, col int, element string) {
 	fmt.Printf("\x1B[%d;%dH%s", row, col, element)
 }
 
