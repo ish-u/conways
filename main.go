@@ -144,8 +144,8 @@ func (universe Universe) draw() {
 	offsetX := universe.cols / 2
 	offsetY := universe.rows / 2
 	for cell := range universe.grid {
-		row := offsetY - cell.Y
-		col := offsetX + cell.X
+		row := offsetY - cell.Y + 1
+		col := offsetX + cell.X + 1
 		if row > 1 && col > 1 && row < universe.rows && col < universe.cols {
 			drawOnTerminal(row, col, "\u25A3")
 		}
