@@ -284,8 +284,8 @@ func main() {
 				var button, col, row int
 				n, _ := fmt.Sscanf(string(keyBuffer), "\x1b[<%d;%d;%dM", &button, &col, &row)
 				if n == 3 {
-					cellX := col - universe.cols/2
-					cellY := universe.rows/2 - row
+					cellX := col - universe.cols/2 - 1
+					cellY := universe.rows/2 - row + 1
 					if button == 0 {
 						universe.grid.addCell(Cell{cellX, cellY})
 					} else if button == 2 {
